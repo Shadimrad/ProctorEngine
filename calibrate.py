@@ -19,8 +19,9 @@ def run_calibration(cap, screen_w_mm, screen_h_mm):
         cv2.putText(frame,'Look & press SPACE',(30,40),cv2.FONT_HERSHEY_SIMPLEX,1,(0,255,0),2)
         cv2.imshow('calib',frame)
         k=cv2.waitKey(1)&0xFF
+        print(f"Key pressed: {k}")  # Debug print
         if k==27: raise KeyboardInterrupt
-        if k!=32: continue
+        if k==255: continue  # No key pressed
         res=mp_face.process(cv2.cvtColor(frame,cv2.COLOR_BGR2RGB))
         if not res.multi_face_landmarks: continue
         lm=res.multi_face_landmarks[0].landmark
@@ -35,10 +36,15 @@ def run_calibration(cap, screen_w_mm, screen_h_mm):
             dtype=np.float32,
         )
         iris_cam=np.linalg.inv(cam)@iris_px; eye_cam=np.linalg.inv(cam)@eye_px
-        iris_cam/=iris_cam[2]; eye_cam/=eye_cam[2]
-        iris_w=cam2world(iris_cam,R,t); eye_w=cam2world(eye_cam,R,t)
-        ray=iris_w-eye_w; ray/=np.linalg.norm(ray)
-        rays.append(ray); pupils.append(eye_w)
+        if iris_cam[2] != 0 and eye_cam[2] != 0:
+            iris_cam/=iris_cam[2]; eye_cam/=eye_cam[2]
+            iris_w=cam2world(iris_cam,R,t); eye_w=cam2world(eye_cam,R,t)
+            ray=iris_w-eye_w
+            ray_norm = np.linalg.norm(ray)
+            if ray_norm > 0 and np.all(np.isfinite(ray)) and np.all(np.isfinite(eye_w)):
+                ray/=ray_norm
+                rays.append(ray); pupils.append(eye_w)
+                print(f"Collected {len(rays)} valid rays...")
     cv2.destroyWindow('calib')
     plane=ScreenPlane(screen_w_mm,screen_h_mm); plane.fit(rays,pupils)
     return plane

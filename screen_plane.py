@@ -7,7 +7,20 @@ class ScreenPlane:
         self.O=self.Ux=self.Uy=self.n=None
     @staticmethod
     def _pca_normal(rays):
-        _,_,vt=np.linalg.svd(np.stack(rays));n=vt[-1];return n/np.linalg.norm(n)
+        if len(rays) < 3:
+            raise ValueError("Need at least 3 rays for PCA")
+        rays_mat = np.stack(rays)
+        if not np.all(np.isfinite(rays_mat)):
+            raise ValueError("Invalid rays detected")
+        try:
+            _, _, vt = np.linalg.svd(rays_mat)
+            n = vt[-1]
+            n_norm = np.linalg.norm(n)
+            if n_norm > 0:
+                return n / n_norm
+            raise ValueError("Zero normal vector")
+        except np.linalg.LinAlgError:
+            raise ValueError("SVD failed to converge")
     def fit(self,rays,pupils):
         self.n=self._pca_normal(rays)
         t0=-np.dot(pupils[4],self.n)/np.dot(rays[4],self.n)
