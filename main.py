@@ -31,7 +31,12 @@ def live_loop(cap, plane):
             if okhp:
                 iris_px=np.array(list(pixel(lm,IRIS_L,w,h))+[0])
                 eye_px=np.array(list(pixel(lm,EYE_L_CORNER,w,h))+[0])
-                cam=np.array([[w,0,w/2],[0,w,h/2],[0,0,1]],dtype=np.float32)
+                cam = np.array(
+                    [[w, 0, w / 2],
+                     [0, h, h / 2],
+                     [0, 0, 1]],
+                    dtype=np.float32,
+                )
                 iris_cam=np.linalg.inv(cam)@iris_px; eye_cam=np.linalg.inv(cam)@eye_px
                 iris_cam/=iris_cam[2]; eye_cam/=eye_cam[2]
                 iris_w=cam2world(iris_cam,R,t); eye_w=cam2world(eye_cam,R,t)

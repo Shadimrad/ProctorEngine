@@ -2,4 +2,5 @@ opencv-python
 mediapipe==0.10.9
 scikit-learn
 filterpy
-numpy 
+numpy
+gaze_tracking
