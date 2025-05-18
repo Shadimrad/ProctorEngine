@@ -16,4 +16,12 @@ Track gaze using the saved plane:
 python main.py track --plane plane.json
 ```
 
-An optional wrapper around the `gaze_tracking` library is available in `advanced_gaze.py` for more sophisticated detection. Install the extra dependency and integrate it as needed.
+For library-based tracking without calibration:
+
+```
+python main.py track --method advanced
+```
+
+The `advanced` method uses either the `LaserGaze` or `gaze_tracking` libraries,
+depending on what is installed. These provide direct gaze ratios without needing
+a calibrated plane.

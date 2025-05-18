@@ -16,35 +16,37 @@ def run_calibration(cap, screen_w_mm, screen_h_mm):
         h,w=frame.shape[:2]
         idx=len(rays); u,v=points_norm[idx]
         cv2.circle(frame,(int(u*w),int(v*h)),12,(0,255,0),-1)
-        cv2.putText(frame,'Look & press SPACE',(30,40),cv2.FONT_HERSHEY_SIMPLEX,1,(0,255,0),2)
+        cv2.putText(frame,'Look & press C to calibrate',(30,40),cv2.FONT_HERSHEY_SIMPLEX,1,(0,255,0),2)
         cv2.imshow('calib',frame)
-        k=cv2.waitKey(1)&0xFF
-        print(f"Key pressed: {k}")  # Debug print
-        if k==27: raise KeyboardInterrupt
-        if k==255: continue  # No key pressed
-        res=mp_face.process(cv2.cvtColor(frame,cv2.COLOR_BGR2RGB))
-        if not res.multi_face_landmarks: continue
-        lm=res.multi_face_landmarks[0].landmark
-        okhp,R,t=solve_headpose(lm,w,h)
-        if not okhp: continue
-        iris_px=np.array(list(pixel(lm,IRIS_L,w,h))+[0])
-        eye_px=np.array(list(pixel(lm,EYE_L_CORNER,w,h))+[0])
-        cam = np.array(
-            [[w, 0, w / 2],
-             [0, h, h / 2],
-             [0, 0, 1]],
-            dtype=np.float32,
-        )
-        iris_cam=np.linalg.inv(cam)@iris_px; eye_cam=np.linalg.inv(cam)@eye_px
-        if iris_cam[2] != 0 and eye_cam[2] != 0:
-            iris_cam/=iris_cam[2]; eye_cam/=eye_cam[2]
-            iris_w=cam2world(iris_cam,R,t); eye_w=cam2world(eye_cam,R,t)
-            ray=iris_w-eye_w
-            ray_norm = np.linalg.norm(ray)
-            if ray_norm > 0 and np.all(np.isfinite(ray)) and np.all(np.isfinite(eye_w)):
-                ray/=ray_norm
-                rays.append(ray); pupils.append(eye_w)
-                print(f"Collected {len(rays)} valid rays...")
+        k = cv2.waitKey(30) & 0xFF
+        print(f"Waiting for key press... Current key: {k}")  # Debug print
+        if k == 27:  # ESC
+            raise KeyboardInterrupt
+        if k == ord('c'):  # Use 'c' instead of space
+            print("Calibration point captured!")  # Debug print
+            res = mp_face.process(cv2.cvtColor(frame,cv2.COLOR_BGR2RGB))
+            if not res.multi_face_landmarks: continue
+            lm=res.multi_face_landmarks[0].landmark
+            okhp,R,t=solve_headpose(lm,w,h)
+            if not okhp: continue
+            iris_px=np.array(list(pixel(lm,IRIS_L,w,h))+[0])
+            eye_px=np.array(list(pixel(lm,EYE_L_CORNER,w,h))+[0])
+            cam = np.array(
+                [[w, 0, w / 2],
+                 [0, h, h / 2],
+                 [0, 0, 1]],
+                dtype=np.float32,
+            )
+            iris_cam=np.linalg.inv(cam)@iris_px; eye_cam=np.linalg.inv(cam)@eye_px
+            if iris_cam[2] != 0 and eye_cam[2] != 0:
+                iris_cam/=iris_cam[2]; eye_cam/=eye_cam[2]
+                iris_w=cam2world(iris_cam,R,t); eye_w=cam2world(eye_cam,R,t)
+                ray=iris_w-eye_w
+                ray_norm = np.linalg.norm(ray)
+                if ray_norm > 0 and np.all(np.isfinite(ray)) and np.all(np.isfinite(eye_w)):
+                    ray/=ray_norm
+                    rays.append(ray); pupils.append(eye_w)
+                    print(f"Collected {len(rays)} valid rays...")
     cv2.destroyWindow('calib')
     plane=ScreenPlane(screen_w_mm,screen_h_mm); plane.fit(rays,pupils)
     return plane

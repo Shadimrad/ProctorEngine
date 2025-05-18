@@ -4,3 +4,4 @@ scikit-learn
 filterpy
 numpy
 gaze_tracking
+lasergaze
